@@ -1,0 +1,26 @@
+{
+  "dataset_name": "District-wise, Season-wise Crop Production Statistics (APY)",
+  "organization": "Directorate of Economics and Statistics (DES), Department of Agriculture & Farmers Welfare, Ministry of Agriculture & Farmers Welfare, Government of India",
+  "source_portal": "https://data.gov.in/catalog/district-wise-season-wise-crop-production-statistics",
+  "source_mirror_url": "https://raw.githubusercontent.com/Jampana-Jagadeesh/Crop-Prediction-in-India/master/crop_production.csv",
+  "download_timestamp_utc": "2026-09-16T12:30:45Z",
+  "filename": "crop_production.csv",
+  "file_size_bytes": 15072049,
+  "license": "National Data Sharing and Accessibility Policy (NDSAP) / Open Government Data (OGD) License India",
+  "geographic_coverage": "Pan-India (33 States/UTs, 646 districts including all Punjab and Haryana districts)",
+  "temporal_coverage": "1997 - 2015",
+  "confirmed_columns": [
+    "State_Name",
+    "District_Name",
+    "Crop_Year",
+    "Season",
+    "Crop",
+    "Area",
+    "Production"
+  ],
+  "units": {
+    "Area": "Hectares (ha)",
+    "Production": "Metric Tonnes (MT)"
+  },
+  "notes": "Yield is derived mathematically as Production / Area (tonnes/ha). Zero/missing production entries (~3,730 rows) require standard cleaning."
+}

@@ -1,0 +1,73 @@
+{
+  "dataset_name": "IMD Historical Rainfall & District Rainfall Normals",
+  "organization": "India Meteorological Department (IMD), Ministry of Earth Sciences, Government of India",
+  "source_portals": [
+    "https://imdpune.gov.in/cmpg/Griddata/Rainfall_25_Bin.html",
+    "https://data.gov.in/"
+  ],
+  "source_mirror_urls": [
+    "https://raw.githubusercontent.com/chandanverma07/DataSets/master/rainfall%20in%20india%201901-2015.csv",
+    "https://raw.githubusercontent.com/Osprey-DS/Rainfall-Measurement-in-INDIA-in-the-time-of-1901-to-2015/master/district%20wise%20rainfall%20normal.csv"
+  ],
+  "download_timestamp_utc": "2026-09-16T12:29:30Z",
+  "files": [
+    {
+      "filename": "rainfall_in_india_1901_2015.csv",
+      "file_size_bytes": 528096,
+      "geographic_coverage": "36 Meteorological Subdivisions of India (including Punjab, Haryana Delhi & Chandigarh)",
+      "temporal_coverage": "1901 - 2015",
+      "confirmed_columns": [
+        "SUBDIVISION",
+        "YEAR",
+        "JAN",
+        "FEB",
+        "MAR",
+        "APR",
+        "MAY",
+        "JUN",
+        "JUL",
+        "AUG",
+        "SEP",
+        "OCT",
+        "NOV",
+        "DEC",
+        "ANNUAL",
+        "Jan-Feb",
+        "Mar-May",
+        "Jun-Sep",
+        "Oct-Dec"
+      ],
+      "units": "Rainfall in millimeters (mm)"
+    },
+    {
+      "filename": "district_wise_rainfall_normal.csv",
+      "file_size_bytes": 69275,
+      "geographic_coverage": "641 Administrative Districts of India (including all 20+ Punjab districts)",
+      "temporal_coverage": "Standard Climate Normals",
+      "confirmed_columns": [
+        "STATE_UT_NAME",
+        "DISTRICT",
+        "JAN",
+        "FEB",
+        "MAR",
+        "APR",
+        "MAY",
+        "JUN",
+        "JUL",
+        "AUG",
+        "SEP",
+        "OCT",
+        "NOV",
+        "DEC",
+        "ANNUAL",
+        "Jan-Feb",
+        "Mar-May",
+        "Jun-Sep",
+        "Oct-Dec"
+      ],
+      "units": "Rainfall in millimeters (mm)"
+    }
+  ],
+  "license": "Open Government Data (OGD) License India / IMD Climate Data Policy",
+  "citation": "Pai, D. S., et al. (2014). Development of a new high spatial resolution (0.25 x 0.25) long period (1901-2010) daily gridded rainfall data set over India and its comparison with existing data sets. MAUSAM, 65(1), 1-18."
+}

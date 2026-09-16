@@ -1,25 +1,64 @@
 # Dataset Notes & Feature Columns
 
-A statistically sound, highly realistic agricultural dataset was generated mimicking the Punjab and Haryana regions in India.
+> **Status (updated Prompt 01b):** The yield prediction model is now trained on
+> **empirical, real-world data**. The synthetic generator described in previous
+> versions of this file has been retired from the production training path.
+> See [`docs/DATA_SOURCES.md`](DATA_SOURCES.md) for full provenance of all real data sources.
 
-## Features Available:
-- **state** (Categorical): state names (`Punjab`, `Haryana`)
-- **district** (Categorical): 10 districts including Ludhiana, Jalandhar, Amritsar
-- **crop** (Categorical): Target crops (`Rice (Paddy)`, `Wheat`, `Sugarcane`, `Cotton`, `Maize`)
-- **season** (Categorical): `Kharif` or `Rabi`
-- **area_ha** (Numerical): Cultivated area of the farm in hectares (1.0 to 50.0)
-- **temperature_c** (Numerical): Mean seasonal temperature in Celsius
-- **rainfall_mm** (Numerical): Total seasonal rainfall in mm
-- **yield_tons_per_ha** (Numerical - Target): Crop yield output in metric tons per hectare
+---
 
-```
-           area_ha  temperature_c  rainfall_mm  yield_tons_per_ha
-count  5000.000000     5000.00000  5000.000000        5000.000000
-mean     25.396502       26.92280   577.044100          17.069632
-std      14.129686        5.53549   324.017186          28.296897
-min       1.001005       11.40000    13.000000           0.100000
-25%      13.025447       23.70000   339.025000           2.830000
-50%      25.587139       28.30000   536.750000           3.520000
-75%      37.558086       31.10000   824.900000           4.300000
-max      49.993700       39.90000  1699.200000          96.830000
-```
+## Real Training Data (Current)
+
+The processed training dataset at `ml/data/processed/crop_yield_weather_processed.csv`
+is derived from two authoritative external sources documented in
+[`docs/DATA_SOURCES.md`](DATA_SOURCES.md):
+
+| Feature | Source | Notes |
+|---|---|---|
+| `state` | DES APY `State_Name` | Stripped whitespace, title-cased |
+| `district` | DES APY `District_Name` | Uppercased; district name reconciliation applied (see `ml/preprocessing/clean.py`) |
+| `crop` | DES APY `Crop` mapped via `CROP_NAME_MAPPING` | Only 5 target crops retained: Rice (Paddy), Wheat, Sugarcane, Cotton, Maize |
+| `season` | DES APY `Season` | Stripped whitespace |
+| `area_ha` | DES APY `Area` (hectares) | Non-positive values dropped |
+| `temperature_c` | Derived from `CLIMATIC_SEASONAL_TEMPERATURES` (state+season baseline) | **Not measured IMD temperature data** — documented approximation; no IMD temperature dataset was acquired in Prompt 01a |
+| `rainfall_mm` | IMD `district_wise_rainfall_normal.csv` seasonal columns | Season-matched to Kharif (Jun–Sep), Rabi (Oct–Dec + Jan–Feb), Summer (Mar–May), Whole Year (ANNUAL) |
+| `yield_tons_per_ha` | Derived as `Production (MT) / Area (ha)` | Target variable; outliers outside agronomic bounds filtered before training |
+
+### Processed Dataset Statistics
+
+- **Source**: DES APY 1997–2015 × IMD district rainfall normals
+- **Pipeline**: `ml/preprocessing/feature_engineering.py → run_pipeline()`
+- **Rows**: ~48,214 (after cleaning and outlier filtering)
+- **Crops**: Cotton, Maize, Rice (Paddy), Sugarcane, Wheat
+- **States**: 33 States/UTs (pan-India)
+- **Yield range**: 0.059 – 159.954 MT/ha (reflects genuine Sugarcane high-tonnage range)
+
+---
+
+## Deprecated: Synthetic Generator
+
+`generate_agricultural_data()` in `ml/training/train.py` is **deprecated from
+the production path** as of Prompt 01b. It is retained in the file **only** to
+support test fixture generation in `tests/test_data_ingestion.py` and must
+**never** be called from `main()` or any production code path.
+
+The synthetic generator produced 5,000 rows via a hand-written formula with
+`np.random.seed(42)`, yielding an artificially high R²=0.9911. This metric
+is not comparable to results on real data and is now superseded.
+
+---
+
+## Cleaning & Validation Transforms Applied
+
+See `ml/preprocessing/clean.py` and `ml/preprocessing/validate.py` for full
+details. Key documented transforms:
+
+1. **Crop name mapping** — `Rice` → `Rice (Paddy)`, `Cotton(lint)` → `Cotton`
+2. **Missing Production** — DROP (cannot compute yield target)
+3. **Non-positive Area** — REJECT
+4. **District name reconciliation** — `FIROZEPUR` → `FEROZEPUR`,
+   `FAZILKA` → `FEROZEPUR` (bifurcated 2011, parent IMD station used), etc.
+5. **Agronomic yield outlier filtering** — bounds per crop documented in
+   `AGRONOMIC_YIELD_BOUNDS` (e.g. Rice: 0.1–8.0 MT/ha, Sugarcane: 5.0–160.0 MT/ha)
+6. **Temperature approximation** — seasonal baseline + state thermal offset;
+   this is a documented limitation, not a silent default.

@@ -1,0 +1,101 @@
+{
+  "source": "Survey of India / DES State-District Administrative Master",
+  "states": {
+    "Punjab": {
+      "state_code": "PB",
+      "districts": [
+        "AMRITSAR",
+        "BARNALA",
+        "BATHINDA",
+        "FARIDKOT",
+        "FATEHGARH SAHIB",
+        "FAZILKA",
+        "FIROZEPUR",
+        "GURDASPUR",
+        "HOSHIARPUR",
+        "JALANDHAR",
+        "KAPURTHALA",
+        "LUDHIANA",
+        "MANSA",
+        "MOGA",
+        "MUKTSAR",
+        "NAWANSHAHR",
+        "PATHANKOT",
+        "PATIALA",
+        "RUPNAGAR",
+        "SANGRUR",
+        "SAS NAGAR",
+        "TARN TARAN"
+      ]
+    },
+    "Haryana": {
+      "state_code": "HR",
+      "districts": [
+        "AMBALA",
+        "BHIWANI",
+        "CHARKHI DADRI",
+        "FARIDABAD",
+        "FATEHABAD",
+        "GURGAON",
+        "HISAR",
+        "JHAJJAR",
+        "JIND",
+        "KAITHAL",
+        "KARNAL",
+        "KURUKSHETRA",
+        "MAHENDRAGARH",
+        "MEWAT",
+        "PALWAL",
+        "PANCHKULA",
+        "PANIPAT",
+        "REWARI",
+        "ROHTAK",
+        "SIRSA",
+        "SONIPAT",
+        "YAMUNANAGAR"
+      ]
+    }
+  },
+  "target_biomass_crops": [
+    {
+      "crop_name": "Rice",
+      "aliases": ["Rice", "Rice (Paddy)", "Paddy"],
+      "primary_season": "Kharif",
+      "residue_type": "Paddy Straw / Stubble",
+      "official_residue_ratio": 1.5,
+      "official_recovery_factor": 0.5
+    },
+    {
+      "crop_name": "Wheat",
+      "aliases": ["Wheat"],
+      "primary_season": "Rabi",
+      "residue_type": "Wheat Straw / Bhusa",
+      "official_residue_ratio": 1.5,
+      "official_recovery_factor": 0.3
+    },
+    {
+      "crop_name": "Sugarcane",
+      "aliases": ["Sugarcane"],
+      "primary_season": "Kharif / Annual",
+      "residue_type": "Sugarcane Bagasse / Trash & Tops",
+      "official_residue_ratio": 0.2,
+      "official_recovery_factor": 0.8
+    },
+    {
+      "crop_name": "Cotton",
+      "aliases": ["Cotton(lint)", "Cotton"],
+      "primary_season": "Kharif",
+      "residue_type": "Cotton Stalks",
+      "official_residue_ratio": 2.75,
+      "official_recovery_factor": 0.8
+    },
+    {
+      "crop_name": "Maize",
+      "aliases": ["Maize"],
+      "primary_season": "Kharif",
+      "residue_type": "Maize Stover / Cob residue",
+      "official_residue_ratio": 1.5,
+      "official_recovery_factor": 0.4
+    }
+  ]
+}

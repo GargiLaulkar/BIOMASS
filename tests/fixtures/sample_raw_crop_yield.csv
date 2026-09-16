@@ -1,0 +1,11 @@
+State_Name,District_Name,Crop_Year,Season,Crop,Area,Production
+Punjab,LUDHIANA,2005,Kharif     ,Rice,102.0,321.0
+Punjab,AMRITSAR,2006,Rabi       ,Wheat,85.0,340.0
+Punjab,PATIALA,2007,Kharif     ,Maize,50.0,150.0
+Punjab,BATHINDA,2008,Kharif     ,Cotton(lint),120.0,240.0
+Punjab,JALANDHAR,2009,Kharif     ,Sugarcane,30.0,2700.0
+Punjab,LUDHIANA,2010,Kharif     ,Rice,200.0,800.0
+Punjab,AMRITSAR,2010,Rabi       ,Wheat,150.0,600.0
+Punjab,LUDHIANA,2011,Kharif     ,Arecanut,10.0,15.0
+Punjab,PATIALA,2012,Kharif     ,Rice,,
+Punjab,BATHINDA,2013,Rabi       ,Wheat,-5.0,100.0
