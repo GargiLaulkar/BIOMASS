@@ -11,8 +11,12 @@ from typing import Optional, Tuple
 import pandas as pd
 import numpy as np
 
-from .clean import clean_crop_data, clean_weather_data
-from .validate import validate_dataset
+try:
+    from .clean import clean_crop_data, clean_weather_data
+    from .validate import validate_dataset
+except (ImportError, ValueError):
+    from ml.preprocessing.clean import clean_crop_data, clean_weather_data
+    from ml.preprocessing.validate import validate_dataset
 
 # Climatological baseline seasonal temperatures (°C) in India's agricultural zones
 CLIMATIC_SEASONAL_TEMPERATURES = {

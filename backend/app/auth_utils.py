@@ -42,6 +42,23 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
+def create_password_reset_token(email: str, expires_delta: timedelta = timedelta(minutes=30)) -> str:
+    """Generates a secure password reset token valid for 30 minutes."""
+    expire = datetime.utcnow() + expires_delta
+    to_encode = {"sub": email, "type": "password_reset", "exp": expire}
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def verify_password_reset_token(token: str) -> str:
+    """Verifies a password reset token and returns the associated email if valid."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "password_reset":
+            return None
+        email: str = payload.get("sub")
+        return email
+    except jwt.PyJWTError:
+        return None
+
 # Dependency to fetch the currently logged-in user
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(

@@ -10,10 +10,10 @@ Trained on **38571** samples, evaluated on **9643** samples (80/20 split, random
 ## Results
 
 ```
-            Model     MAE      RMSE    R2 Score
-Linear Regression 29.3932 2393.2087 -11357.6526
-    Random Forest  1.7826    5.7082      0.9354
-          XGBoost  1.8917    5.5328      0.9393
+            Model    MAE   RMSE  R2 Score
+Linear Regression 4.8819 9.5629    0.8186
+    Random Forest 1.7841 5.7114    0.9353
+          XGBoost 1.8917 5.5328    0.9393
 ```
 
 **Selected Model:** XGBoost (R² Score: 0.9393)

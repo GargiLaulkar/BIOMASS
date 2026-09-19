@@ -33,6 +33,19 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    token: str = Field(..., min_length=4)
+    new_password: str = Field(..., min_length=6)
+
+class PasswordResetResponse(BaseModel):
+    message: str
+    reset_token: Optional[str] = None
+    email: Optional[str] = None
+
 # --- Crops ---
 class CropResponse(BaseModel):
     id: int

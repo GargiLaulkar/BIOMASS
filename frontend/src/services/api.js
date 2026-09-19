@@ -44,7 +44,19 @@ class ApiService {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errorMsg = data.detail || (typeof data === 'string' ? data : 'API request failed');
+        let errorMsg = 'API request failed';
+        if (Array.isArray(data.detail)) {
+          errorMsg = data.detail.map(d => {
+            const field = d.loc && d.loc.length > 1 ? `${d.loc[d.loc.length - 1]}: ` : '';
+            return `${field}${d.msg}`;
+          }).join(', ');
+        } else if (typeof data.detail === 'string') {
+          errorMsg = data.detail;
+        } else if (typeof data === 'string') {
+          errorMsg = data;
+        } else if (data.message) {
+          errorMsg = data.message;
+        }
         throw new Error(errorMsg);
       }
       return data;
@@ -71,6 +83,20 @@ class ApiService {
       this.setToken(data.access_token);
     }
     return data;
+  }
+
+  async forgotPassword(email) {
+    return this.request('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  }
+
+  async resetPassword(email, token, new_password) {
+    return this.request('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, token, new_password })
+    });
   }
 
   logout() {

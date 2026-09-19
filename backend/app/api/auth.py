@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from database.db import get_db
 from database.models import User
-from backend.app.schemas.schemas import UserRegister, UserLogin, Token, UserResponse
-from backend.app.auth_utils import get_password_hash, verify_password, create_access_token
+from backend.app.schemas.schemas import UserRegister, UserLogin, Token, UserResponse, ForgotPasswordRequest, ResetPasswordRequest, PasswordResetResponse
+from backend.app.auth_utils import get_password_hash, verify_password, create_access_token, create_password_reset_token, verify_password_reset_token
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -49,6 +49,48 @@ def login(login_in: UserLogin, db: Session = Depends(get_db)):
         access_token=access_token,
         token_type="bearer",
         role=user.role
+    )
+
+@router.post("/forgot-password", response_model=PasswordResetResponse)
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email address."
+        )
+    
+    reset_token = create_password_reset_token(user.email)
+    return PasswordResetResponse(
+        message="Password reset instructions and verification token generated.",
+        reset_token=reset_token,
+        email=user.email
+    )
+
+@router.post("/reset-password", response_model=PasswordResetResponse)
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    # Verify token
+    verified_email = verify_password_reset_token(request.token)
+    if not verified_email or verified_email.lower() != request.email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token."
+        )
+    
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account not found."
+        )
+    
+    # Update password
+    user.password_hash = get_password_hash(request.new_password)
+    db.commit()
+    
+    return PasswordResetResponse(
+        message="Password has been reset successfully! You can now log in with your new password.",
+        email=user.email
     )
 
 # FastAPI OAuth2PasswordBearer compatibility login endpoint (Form-based)

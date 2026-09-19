@@ -216,8 +216,10 @@ def validate_weather_data(df: pd.DataFrame) -> Dict[str, Any]:
         "impossible_values": 0
     }
 
-    # Check rainfall ranges
-    rain_cols = [c for c in ["Jan-Feb", "Mar-May", "Jun-Sep", "Oct-Dec", "ANNUAL", "rainfall_mm"] if c in df.columns]
+    # Check rainfall ranges (monthly + seasonal + annual)
+    month_cols = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+    seasonal_cols = ["Jan-Feb", "Mar-May", "Jun-Sep", "Oct-Dec", "ANNUAL", "rainfall_mm"]
+    rain_cols = [c for c in (month_cols + seasonal_cols) if c in df.columns]
     for col in rain_cols:
         # Negative rainfall
         neg = df[df[col] < 0]

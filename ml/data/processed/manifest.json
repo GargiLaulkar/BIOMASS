@@ -1,7 +1,7 @@
 {
   "dataset_name": "Empirical Agricultural Crop Yield & Climate Normals (BioPlan Processed)",
   "version": "1.0.0",
-  "date_generated": "2026-09-16T07:08:36.991722Z",
+  "date_generated": "2026-09-19T16:24:50.303590+00:00",
   "source_raw_crop": "ml/data/raw/crop_yield_des/crop_production.csv",
   "source_raw_weather": "ml/data/raw/imd_weather/district_wise_rainfall_normal.csv",
   "row_count": 48214,
