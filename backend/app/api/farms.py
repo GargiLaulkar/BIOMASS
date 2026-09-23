@@ -64,3 +64,22 @@ def get_farm(id: int, current_user: User = Depends(get_current_user), db: Sessio
             detail="Forbidden: You are not authorized to view this farm"
         )
     return farm
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_farm(id: int, current_user: User = Depends(get_current_farmer), db: Session = Depends(get_db)):
+    farm = db.query(Farm).filter(Farm.id == id).first()
+    if not farm:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Farm with id {id} not found"
+        )
+    # Farmers may only delete their own farms
+    if farm.farmer_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You can only delete your own farms"
+        )
+    # ORM cascade="all, delete-orphan" on Farm relationships handles
+    # FarmCrop, YieldPrediction, BiomassPrediction, and Match rows automatically.
+    db.delete(farm)
+    db.commit()

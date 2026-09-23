@@ -96,6 +96,7 @@ class FarmResponse(BaseModel):
     state: str
     created_at: datetime
     farm_crops: List[FarmCropResponse] = []
+    biomass_predictions: List["BiomassPredictionResponse"] = []
 
     class Config:
         from_attributes = True
@@ -160,9 +161,15 @@ class BiomassPredictionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Resolve forward reference for FarmResponse.biomass_predictions
+FarmResponse.model_rebuild()
+
 class FarmPredictionDetail(BaseModel):
     yield_prediction: Optional[float] = None
     biomass_prediction: Optional[BiomassPredictionResponse] = None
+    residue_ratio: Optional[float] = None
+    recovery_factor: Optional[float] = None
+    cultivated_area: Optional[float] = None
 
 # --- Matches ---
 class MatchResponse(BaseModel):
