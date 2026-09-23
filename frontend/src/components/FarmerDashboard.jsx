@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { api } from '../services/api';
 import BiomassMap from './BiomassMap';
 import {
@@ -15,14 +16,30 @@ import {
   ArrowRight,
   RefreshCw,
   Building,
-  Scale
+  Scale,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export default function FarmerDashboard() {
+  const { t } = useTranslation();
+  const outletContext = useOutletContext();
+  const activeSection = outletContext?.activeSection;
+
+  useEffect(() => {
+    if (activeSection) {
+      const el = document.getElementById(`section-${activeSection}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [activeSection]);
+
   const [farms, setFarms] = useState([]);
   const [crops, setCrops] = useState([]);
   const [selectedFarm, setSelectedFarm] = useState(null);
@@ -44,16 +61,24 @@ export default function FarmerDashboard() {
   const [submittingFarm, setSubmittingFarm] = useState(false);
   const [newFarm, setNewFarm] = useState({
     farm_name: '',
-    latitude: 30.9002,
-    longitude: 75.8572,
+    latitude: null,
+    longitude: null,
     area: 5.0,
-    district: 'Ludhiana',
-    state: 'Punjab',
+    district: '',
+    state: '',
     crop_id: 1,
     season: 'Kharif',
     cultivated_area: 5.0,
     expected_harvest_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   });
+  // Location / geocoding state for Add Farm modal
+  const [locationQuery, setLocationQuery] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeResult, setGeocodeResult] = useState(null);  // { display_name, lat, lon }
+  const [geocodeError, setGeocodeError] = useState('');
+  // Delete confirm state: stores the farm id pending confirmation, or null
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Fetch Initial Data
   const fetchData = async () => {
@@ -157,8 +182,71 @@ export default function FarmerDashboard() {
     }
   };
 
+  // ── Geocode a typed location via Nominatim (OSM) ──────────────────────────
+  const geocodeLocation = async (query) => {
+    const q = query.trim();
+    if (!q) return;
+    setGeocoding(true);
+    setGeocodeError('');
+    setGeocodeResult(null);
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=in`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'BioPlanAI/1.0 (agricultural-biomass-platform)' }
+      });
+      if (!res.ok) throw new Error('Geocoding service unavailable');
+      const results = await res.json();
+      if (!results || results.length === 0) {
+        setGeocodeError("Couldn't find that location — try being more specific, e.g. add state name.");
+        return;
+      }
+      const hit = results[0];
+      const lat = parseFloat(hit.lat);
+      const lon = parseFloat(hit.lon);
+      // Auto-extract district / state from address components when available
+      const addr = hit.address || {};
+      const district = addr.county || addr.district || addr.city || addr.town || addr.village || '';
+      const state = addr.state || '';
+      setGeocodeResult({ display_name: hit.display_name, lat, lon });
+      setNewFarm(prev => ({
+        ...prev,
+        latitude: lat,
+        longitude: lon,
+        district: district || prev.district,
+        state: state || prev.state
+      }));
+    } catch (err) {
+      setGeocodeError(`Geocoding failed: ${err.message}`);
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
+  const resetModal = () => {
+    setShowAddFarmModal(false);
+    setLocationQuery('');
+    setGeocodeResult(null);
+    setGeocodeError('');
+    setNewFarm({
+      farm_name: '',
+      latitude: null,
+      longitude: null,
+      area: 5.0,
+      district: '',
+      state: '',
+      crop_id: 1,
+      season: 'Kharif',
+      cultivated_area: 5.0,
+      expected_harvest_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    });
+  };
+
   const handleCreateFarm = async (e) => {
     e.preventDefault();
+    if (newFarm.latitude === null || newFarm.longitude === null) {
+      setGeocodeError("Please enter a location name and wait for it to be resolved before submitting.");
+      return;
+    }
     setSubmittingFarm(true);
     try {
       const payload = {
@@ -179,19 +267,7 @@ export default function FarmerDashboard() {
       };
 
       const created = await api.createFarm(payload);
-      setShowAddFarmModal(false);
-      setNewFarm({
-        farm_name: '',
-        latitude: 30.9002,
-        longitude: 75.8572,
-        area: 5.0,
-        district: 'Ludhiana',
-        state: 'Punjab',
-        crop_id: 1,
-        season: 'Kharif',
-        cultivated_area: 5.0,
-        expected_harvest_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      });
+      resetModal();
 
       // Refresh data
       await fetchData();
@@ -201,6 +277,30 @@ export default function FarmerDashboard() {
       alert(`Failed to create farm: ${err.message}`);
     } finally {
       setSubmittingFarm(false);
+    }
+  };
+
+  // ── Delete farm ────────────────────────────────────────────────────────────
+  const handleDeleteFarm = async (farmId) => {
+    setDeletingId(farmId);
+    try {
+      await api.deleteFarm(farmId);
+      // Remove from local state immediately for instant UI feedback
+      const remaining = farms.filter(f => f.id !== farmId);
+      setFarms(remaining);
+      if (selectedFarm?.id === farmId) {
+        const next = remaining[0] || null;
+        setSelectedFarm(next);
+        setPredictionData(null);
+        setMatchesData(null);
+        setNearbyBuyers([]);
+        if (next) loadFarmDetails(next.id, next);
+      }
+    } catch (err) {
+      alert(`Failed to delete farm: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -217,37 +317,37 @@ export default function FarmerDashboard() {
     labels: farms.map(f => f.farm_name),
     datasets: [
       {
-        label: 'Area (Hectares)',
+        label: t('area'),
         data: farms.map(f => f.area),
-        backgroundColor: 'rgba(59, 130, 246, 0.65)',
+        backgroundColor: 'rgba(104, 75, 53, 0.72)',
         borderRadius: 6
       },
       {
-        label: 'Residue Biomass (MT)',
+        label: t('totalBiomass'),
         data: farms.map(f => f.biomass_predictions?.[0]?.biomass_quantity || 0),
-        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+        backgroundColor: 'rgba(50, 100, 71, 0.78)',
         borderRadius: 6
       }
     ]
   };
 
   return (
-    <div>
+    <div id="section-overview" style={{ paddingBottom: '2rem' }}>
       {/* Top Banner & Quick Action */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span>Farmer Dashboard</span>
-            <span className="badge badge-emerald">Active Supply</span>
+            <span>{t('farmerDashboard')}</span>
+            <span className="badge badge-emerald">{t('activeSupply')}</span>
           </h1>
-          <p>Manage registered agricultural land, forecast crop residue biomass, and review optimal buyer matches.</p>
+          <p>{t('farmerManageDesc')}</p>
         </div>
         <button
           className="btn btn-primary"
           onClick={() => setShowAddFarmModal(true)}
         >
           <Plus size={18} />
-          <span>Register New Farm</span>
+          <span>{t('addFarm')}</span>
         </button>
       </div>
 
@@ -259,7 +359,7 @@ export default function FarmerDashboard() {
           </div>
           <div>
             <div className="stat-value">{totalFarms}</div>
-            <div className="stat-label">Registered Farms</div>
+            <div className="stat-label">{t('registeredFarms')}</div>
           </div>
         </div>
 
@@ -269,9 +369,13 @@ export default function FarmerDashboard() {
           </div>
           <div>
             <div className="stat-value">
-              {totalBiomass > 0 ? `${totalBiomass.toFixed(1)} MT` : (predictionData?.biomass_prediction?.biomass_quantity ? `${predictionData.biomass_prediction.biomass_quantity.toFixed(1)} MT` : '0.0 MT')}
+              {totalBiomass > 0
+                ? `${totalBiomass.toFixed(1)} MT`
+                : (predictionData?.biomass_prediction?.biomass_quantity
+                  ? `${predictionData.biomass_prediction.biomass_quantity.toFixed(1)} MT`
+                  : <span title="Run a prediction to see estimates" style={{ cursor: 'help' }}>—</span>)}
             </div>
-            <div className="stat-label">Total Residue Biomass</div>
+            <div className="stat-label">{t('totalBiomass')}</div>
           </div>
         </div>
 
@@ -281,7 +385,7 @@ export default function FarmerDashboard() {
           </div>
           <div>
             <div className="stat-value">{nearbyBuyers.length}</div>
-            <div className="stat-label">Nearby Biomass Buyers</div>
+            <div className="stat-label">{t('nearbyBuyers')}</div>
           </div>
         </div>
 
@@ -291,62 +395,99 @@ export default function FarmerDashboard() {
           </div>
           <div>
             <div className="stat-value">
-              {bestMatch ? `₹${bestMatch.expected_profit?.toLocaleString()}` : '₹0'}
+              {bestMatch?.estimated_profit != null
+                ? `₹${bestMatch.estimated_profit.toLocaleString()}`
+                : <span title="Run a prediction to see estimates" style={{ cursor: 'help' }}>—</span>}
             </div>
-            <div className="stat-label">Max Est. Net Profit</div>
+            <div className="stat-label">{t('maxProfit')}</div>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Farm Explorer & AI Matches | Right GIS Map & Forecast */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.75rem' }}>
+      {/* Main Grid: Left Farm Explorer & AI Matches      {/* ── Stacked Dashboard Layout ────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
         
         {/* Left Column: Farm Selector & AI Prediction Panel */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Farm Selection List */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-portfolio" className="glass-panel" style={{ padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <MapPin size={20} color="var(--emerald-400)" />
-                <span>Your Farms</span>
+                <span>{t('farmPortfolio')}</span>
               </h3>
               <button className="btn btn-secondary btn-sm" onClick={fetchData}>
-                <RefreshCw size={14} /> Refresh
+                <RefreshCw size={14} /> {t('refresh')}
               </button>
             </div>
 
             {farms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)' }}>
                 <Leaf size={32} color="var(--emerald-400)" style={{ margin: '0 auto 0.5rem' }} />
-                <div style={{ fontWeight: 600, color: '#fff' }}>No farms registered yet</div>
-                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>Register your farm to run AI biomass predictions and connect with buyers.</p>
+                <div style={{ fontWeight: 600, color: 'var(--ink-900)' }}>{t('noFarms')}</div>
+                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{t('farmerRegisterDesc')}</p>
                 <button className="btn btn-primary btn-sm" onClick={() => setShowAddFarmModal(true)}>
-                  <Plus size={16} /> Add Your First Farm
+                  <Plus size={16} /> {t('createFarm')}
                 </button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {farms.map((farm) => {
                   const isSelected = selectedFarm?.id === farm.id;
+                  const isPendingDelete = confirmDeleteId === farm.id;
+                  const isDeleting = deletingId === farm.id;
                   return (
                     <div
                       key={farm.id}
-                      onClick={() => handleSelectFarm(farm)}
+                      onClick={() => !isPendingDelete && handleSelectFarm(farm)}
                       className={`glass-panel glass-card-interactive`}
                       style={{
                         padding: '1rem',
                         border: isSelected ? '2px solid var(--emerald-400)' : '1px solid var(--border-subtle)',
                         background: isSelected ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-card)',
+                        opacity: isDeleting ? 0.5 : 1,
+                        transition: 'opacity 0.2s'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                        <strong style={{ fontSize: '1.05rem', color: isSelected ? 'var(--emerald-400)' : '#fff' }}>
+                        <strong style={{ fontSize: '1.05rem', color: isSelected ? 'var(--emerald-400)' : 'var(--ink-900)' }}>
                           {farm.farm_name}
                         </strong>
-                        <span className="badge badge-emerald">
-                          {farm.area} ha
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span className="badge badge-emerald">{farm.area} ha</span>
+                          {/* Delete affordance */}
+                          {!isPendingDelete ? (
+                            <button
+                              className="btn btn-sm"
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(farm.id); }}
+                              title="Delete this farm"
+                              style={{ padding: '0.25rem 0.45rem', background: 'transparent', border: '1px solid #d4bfa9', color: 'var(--soil-800)', borderRadius: '6px' }}
+                              disabled={isDeleting}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '0.35rem' }} onClick={e => e.stopPropagation()}>
+                              <span style={{ fontSize: '0.75rem', color: '#b43c30', fontWeight: 600, alignSelf: 'center' }}>{t('deleteQ')}</span>
+                              <button
+                                className="btn btn-sm"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteFarm(farm.id); }}
+                                style={{ padding: '0.2rem 0.55rem', background: '#b43c30', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.75rem' }}
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : 'Yes'}
+                              </button>
+                              <button
+                                className="btn btn-sm"
+                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                                style={{ padding: '0.2rem 0.55rem', background: 'var(--cream-200)', color: 'var(--ink-700)', border: '1px solid var(--border-subtle)', borderRadius: '6px', fontSize: '0.75rem' }}
+                              >
+                                No
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', gap: '1rem' }}>
                         <span>📍 {farm.district}, {farm.state}</span>
@@ -370,7 +511,7 @@ export default function FarmerDashboard() {
 
           {/* AI Biomass Prediction Action Card */}
           {selectedFarm && (
-            <div className="glass-panel" style={{ padding: '1.5rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+            <div id="section-prediction" className="glass-panel" style={{ padding: '1.5rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Sparkles size={20} color="var(--emerald-400)" />
@@ -382,11 +523,11 @@ export default function FarmerDashboard() {
                   disabled={predicting}
                 >
                   {predicting ? (
-                    <span>Running ML Model...</span>
+                    <span>{t('runningMLModel')}</span>
                   ) : (
                     <>
                       <RefreshCw size={14} />
-                      <span>Forecast Biomass</span>
+                      <span>{t('forecastBiomass')}</span>
                     </>
                   )}
                 </button>
@@ -396,38 +537,38 @@ export default function FarmerDashboard() {
                 <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.25rem', borderRadius: 'var(--radius-sm)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Predicted Yield</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('predictedYield')}</div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--blue-400)' }}>
                         {predictionData.yield_prediction ? `${predictionData.yield_prediction.toFixed(2)} MT/ha` : '4.2 MT/ha'}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Residue Biomass</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('residueBiomass')}</div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--emerald-400)' }}>
                         {predictionData.biomass_prediction.biomass_quantity.toFixed(1)} Metric Tons
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Residue Ratio</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('residueRatio')}</div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--amber-400)' }}>
-                        {predictionData.biomass_prediction.residue_ratio}x
+                        {predictionData.residue_ratio != null ? `${predictionData.residue_ratio}x` : '—'}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Recovery Factor</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('recoveryFactor')}</div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff' }}>
-                        {predictionData.biomass_prediction.recovery_factor * 100}%
+                        {predictionData.recovery_factor != null ? `${(predictionData.recovery_factor * 100).toFixed(0)}%` : '—'}
                       </div>
                     </div>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.75rem' }}>
-                    💡 <em>Formula: Biomass (MT) = Yield (MT/ha) × Cultivated Area ({predictionData.biomass_prediction.cultivated_area} ha) × Residue Ratio ({predictionData.biomass_prediction.residue_ratio}) × Recovery ({predictionData.biomass_prediction.recovery_factor})</em>
+                    💡 <em>Formula: Biomass (MT) = Yield (MT/ha) × Cultivated Area ({predictionData.cultivated_area ?? '—'} ha) × Residue Ratio ({predictionData.residue_ratio ?? '—'}) × Recovery ({predictionData.recovery_factor ?? '—'})</em>
                   </div>
                 </div>
               ) : (
                 <div style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)' }}>
                   <p style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>
-                    No prediction calculated for this farm yet. Click <strong>Forecast Biomass</strong> to run the machine learning model.
+                    {t('noPredictionText')}
                   </p>
                   <button className="btn btn-primary btn-sm" onClick={handleRunPrediction} disabled={predicting}>
                     <Sparkles size={16} /> Run Prediction Now
@@ -439,13 +580,13 @@ export default function FarmerDashboard() {
 
           {/* AI Buyer Matches */}
           {selectedFarm && (
-            <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            <div id="section-matches" className="glass-panel" style={{ padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Scale size={20} color="var(--amber-400)" />
-                  <span>AI Buyer Recommendations</span>
+                  <span>{t('aiBuyerRecommendations')}</span>
                 </h3>
-                {matchingLoading && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Computing matches...</span>}
+                {matchingLoading && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('computingMatches')}</span>}
               </div>
 
               {matchesData?.matches && matchesData.matches.length > 0 ? (
@@ -465,8 +606,8 @@ export default function FarmerDashboard() {
                           <span className={index === 0 ? "badge badge-amber" : "badge badge-blue"}>
                             {index === 0 ? "🌟 Top Recommendation" : `Rank #${index + 1}`}
                           </span>
-                          <strong style={{ fontSize: '1.1rem', color: '#fff' }}>
-                            {match.buyer_name}
+                          <strong style={{ fontSize: '1.1rem', color: 'var(--ink-900)' }}>
+                            {match.buyer?.company_name || 'Unknown Buyer'}
                           </strong>
                         </div>
                         <div style={{
@@ -484,27 +625,27 @@ export default function FarmerDashboard() {
                       {/* Economics Breakdown */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px' }}>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Offered Price</div>
-                          <div style={{ fontWeight: 700, color: 'var(--emerald-400)' }}>₹{match.offered_price}/MT</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('offeredPrice')}</div>
+                          <div style={{ fontWeight: 700, color: 'var(--emerald-400)' }}>₹{match.estimated_price?.toLocaleString()}/MT</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Distance</div>
-                          <div style={{ fontWeight: 700, color: '#fff' }}>{match.distance_km} km</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('distance')}</div>
+                          <div style={{ fontWeight: 700, color: 'var(--ink-900)' }}>{match.distance_km} km</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Transport Cost</div>
-                          <div style={{ fontWeight: 700, color: '#f87171' }}>-₹{match.transport_cost?.toLocaleString()}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('transportCost')}</div>
+                          <div style={{ fontWeight: 700, color: '#f87171' }}>-₹{match.estimated_transport_cost?.toLocaleString()}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Expected Net Profit</div>
-                          <div style={{ fontWeight: 800, color: 'var(--amber-400)' }}>₹{match.expected_profit?.toLocaleString()}</div>
+                          <div style={{ fontWeight: 800, color: 'var(--amber-400)' }}>₹{match.estimated_profit?.toLocaleString()}</div>
                         </div>
                       </div>
 
                       {/* Explainability Reason Text */}
                       <div style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
                         <CheckCircle2 size={16} color="var(--emerald-400)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                        <span><strong>Match Reasoning:</strong> {match.reason}</span>
+                        <span><strong>Match Reasoning:</strong> {match.reason_text}</span>
                       </div>
                     </div>
                   ))}
@@ -522,7 +663,7 @@ export default function FarmerDashboard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Interactive Leaflet Map */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-gis" className="glass-panel" style={{ padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <MapPin size={20} color="var(--emerald-400)" />
@@ -539,7 +680,7 @@ export default function FarmerDashboard() {
                     padding: '0.35rem 0.75rem',
                     background: 'var(--bg-card-solid)',
                     border: '1px solid var(--border-subtle)',
-                    color: '#fff',
+                    color: 'var(--ink-900)',
                     borderRadius: '6px',
                     fontSize: '0.8rem'
                   }}
@@ -558,7 +699,7 @@ export default function FarmerDashboard() {
                 buyers={nearbyBuyers}
                 selectedFarm={selectedFarm}
                 radiusKm={radiusKm}
-                height="380px"
+                height="500px"
               />
             </div>
 
@@ -569,7 +710,7 @@ export default function FarmerDashboard() {
           </div>
 
           {/* Biomass Analytics Chart */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-analytics" className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <TrendingUp size={20} color="var(--blue-400)" />
               <span>Biomass Output by Registered Farm</span>
@@ -582,17 +723,15 @@ export default function FarmerDashboard() {
                   maintainAspectRatio: false,
                   plugins: {
                     legend: {
-                      labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+                      labels: { color: '#475044', font: { family: 'Inter', size: 12 } }
                     }
                   },
                   scales: {
                     x: {
-                      ticks: { color: '#64748b' },
-                      grid: { color: 'rgba(255,255,255,0.05)' }
+                      ticks: { color: '#697166' }, grid: { color: 'rgba(104,75,53,0.12)' }
                     },
                     y: {
-                      ticks: { color: '#64748b' },
-                      grid: { color: 'rgba(255,255,255,0.05)' }
+                      ticks: { color: '#697166' }, grid: { color: 'rgba(104,75,53,0.12)' }
                     }
                   }
                 }}
@@ -606,11 +745,11 @@ export default function FarmerDashboard() {
 
       {/* New Farm Registration Modal */}
       {showAddFarmModal && (
-        <div className="modal-overlay" onClick={() => setShowAddFarmModal(false)}>
+        <div className="modal-overlay" onClick={resetModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '2rem' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Register New Agricultural Farm</h2>
             <p style={{ fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-              Add GPS coordinates, crop details, and harvest timing for automated AI biomass prediction.
+              Enter the farm location by name — coordinates are resolved automatically from OpenStreetMap.
             </p>
 
             <form onSubmit={handleCreateFarm}>
@@ -626,29 +765,56 @@ export default function FarmerDashboard() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Latitude (GPS)</label>
+              {/* Location field — replaces manual lat/lng inputs */}
+              <div className="form-group">
+                <label className="form-label">Farm Location</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
-                    type="number"
-                    step="0.0001"
+                    type="text"
                     className="form-control"
-                    value={newFarm.latitude}
-                    onChange={(e) => setNewFarm({ ...newFarm, latitude: e.target.value })}
-                    required
+                    placeholder="e.g. Ludhiana, Punjab  or  Nashik, Maharashtra"
+                    value={locationQuery}
+                    onChange={(e) => {
+                      setLocationQuery(e.target.value);
+                      // Clear previous result when user edits the field
+                      setGeocodeResult(null);
+                      setGeocodeError('');
+                      setNewFarm(prev => ({ ...prev, latitude: null, longitude: null }));
+                    }}
+                    onBlur={() => geocodeLocation(locationQuery)}
                   />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => geocodeLocation(locationQuery)}
+                    disabled={geocoding || !locationQuery.trim()}
+                    title="Locate on map"
+                    style={{ flexShrink: 0, padding: '0 0.9rem' }}
+                  >
+                    {geocoding
+                      ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                      : <MapPin size={15} />}
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Longitude (GPS)</label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    className="form-control"
-                    value={newFarm.longitude}
-                    onChange={(e) => setNewFarm({ ...newFarm, longitude: e.target.value })}
-                    required
-                  />
-                </div>
+
+                {/* Geocoding feedback */}
+                {geocoding && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Locating…
+                  </div>
+                )}
+                {geocodeResult && !geocoding && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: 'var(--forest-700)', background: 'var(--forest-100)', border: '1px solid #b8cfb9', borderRadius: '6px', padding: '0.4rem 0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <CheckCircle2 size={13} />
+                    <span>📍 Located near: <strong>{geocodeResult.display_name.split(',').slice(0, 3).join(',')}</strong> ({geocodeResult.lat.toFixed(4)}, {geocodeResult.lon.toFixed(4)})</span>
+                  </div>
+                )}
+                {geocodeError && !geocoding && (
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.82rem', color: '#b43c30', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.4rem 0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <AlertCircle size={13} />
+                    <span>{geocodeError}</span>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
@@ -668,6 +834,7 @@ export default function FarmerDashboard() {
                   <input
                     type="text"
                     className="form-control"
+                    placeholder="Auto-filled from location"
                     value={newFarm.district}
                     onChange={(e) => setNewFarm({ ...newFarm, district: e.target.value })}
                     required
@@ -678,6 +845,7 @@ export default function FarmerDashboard() {
                   <input
                     type="text"
                     className="form-control"
+                    placeholder="Auto-filled from location"
                     value={newFarm.state}
                     onChange={(e) => setNewFarm({ ...newFarm, state: e.target.value })}
                     required
@@ -686,8 +854,8 @@ export default function FarmerDashboard() {
               </div>
 
               {/* Crop Information */}
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem' }}>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--emerald-400)', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'rgba(35,75,53,0.07)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem', border: '1px solid var(--forest-100)' }}>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--forest-700)', marginBottom: '0.75rem' }}>
                   🌾 Planted Crop & Residue Details
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -748,14 +916,15 @@ export default function FarmerDashboard() {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowAddFarmModal(false)}
+                  onClick={resetModal}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={submittingFarm}
+                  disabled={submittingFarm || newFarm.latitude === null}
+                  title={newFarm.latitude === null ? 'Resolve location first' : ''}
                 >
                   {submittingFarm ? 'Registering Farm...' : 'Register Farm & Compute AI'}
                 </button>

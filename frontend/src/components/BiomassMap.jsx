@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useTranslation } from 'react-i18next';
 
 // Component to handle recentering map when center coordinate changes
 function ChangeView({ center, zoom }) {
@@ -21,18 +22,18 @@ const createFarmIcon = (isSelected = false) => {
       <div style="
         width: ${isSelected ? '38px' : '30px'};
         height: ${isSelected ? '38px' : '30px'};
-        background: linear-gradient(135deg, #10b981, #047857);
+        background: #326447;
         border: 2px solid #ffffff;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.6);
+        box-shadow: 0 4px 14px rgba(35, 75, 53, 0.38);
         color: white;
         font-size: ${isSelected ? '18px' : '14px'};
         transition: all 0.3s ease;
       ">
-        🌱
+        ◆
       </div>
     `,
     iconSize: isSelected ? [38, 38] : [30, 30],
@@ -48,18 +49,18 @@ const createBuyerIcon = (isSelected = false) => {
       <div style="
         width: ${isSelected ? '38px' : '30px'};
         height: ${isSelected ? '38px' : '30px'};
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+        background: #a96f13;
         border: 2px solid #ffffff;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.6);
+        box-shadow: 0 4px 14px rgba(169, 111, 19, 0.35);
         color: white;
         font-size: ${isSelected ? '18px' : '14px'};
         transition: all 0.3s ease;
       ">
-        🏭
+        ●
       </div>
     `,
     iconSize: isSelected ? [38, 38] : [30, 30],
@@ -78,6 +79,7 @@ export default function BiomassMap({
   radiusKm = null,
   height = "420px"
 }) {
+  const { t } = useTranslation();
   const mapCenter = selectedFarm 
     ? [selectedFarm.latitude, selectedFarm.longitude] 
     : (selectedBuyer ? [selectedBuyer.latitude, selectedBuyer.longitude] : center);
@@ -92,10 +94,10 @@ export default function BiomassMap({
       >
         <ChangeView center={mapCenter} zoom={zoom} />
         
-        {/* Modern dark carto tile layer */}
+        {/* OpenStreetMap tile layer (free, no API key required) */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         {/* Optional Radius Ring */}
@@ -104,8 +106,8 @@ export default function BiomassMap({
             center={[selectedFarm.latitude, selectedFarm.longitude]}
             radius={radiusKm * 1000}
             pathOptions={{
-              color: '#10b981',
-              fillColor: '#10b981',
+              color: '#326447',
+              fillColor: '#326447',
               fillOpacity: 0.08,
               weight: 1.5,
               dashArray: '4, 8'
@@ -118,8 +120,8 @@ export default function BiomassMap({
             center={[selectedBuyer.latitude, selectedBuyer.longitude]}
             radius={radiusKm * 1000}
             pathOptions={{
-              color: '#f59e0b',
-              fillColor: '#f59e0b',
+              color: '#a96f13',
+              fillColor: '#a96f13',
               fillOpacity: 0.08,
               weight: 1.5,
               dashArray: '4, 8'
@@ -140,18 +142,17 @@ export default function BiomassMap({
               <Popup>
                 <div style={{ color: '#0f172a', padding: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '1.1rem' }}>🌱</span>
-                    <strong style={{ fontSize: '1rem', color: '#065f46' }}>{farm.farm_name}</strong>
+                    <strong style={{ fontSize: '1rem', color: '#234b35' }}>{farm.farm_name}</strong>
                   </div>
                   <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '4px' }}>
-                    📍 {farm.district}, {farm.state}
+                    {farm.district}, {farm.state}
                   </div>
                   <div style={{ fontSize: '0.85rem', color: '#334155' }}>
-                    <strong>Area:</strong> {farm.area} ha
+                    <strong>{t('areaLabel')}</strong> {farm.area} ha
                   </div>
                   {(farm.farm_crops || farm.crops) && (farm.farm_crops || farm.crops).length > 0 && (
-                    <div style={{ marginTop: '6px', fontSize: '0.8rem', background: '#ecfdf5', padding: '4px 6px', borderRadius: '6px', color: '#047857' }}>
-                      Crops: {(farm.farm_crops || farm.crops).map(c => c.crop?.crop_name || `Crop #${c.crop_id}`).join(', ')}
+                    <div style={{ marginTop: '6px', fontSize: '0.8rem', background: '#e4eee2', padding: '4px 6px', borderRadius: '6px', color: '#234b35' }}>
+                      {t('crops')} {(farm.farm_crops || farm.crops).map(c => c.crop?.crop_name || `Crop #${c.crop_id}`).join(', ')}
                     </div>
                   )}
                 </div>
@@ -173,20 +174,19 @@ export default function BiomassMap({
               <Popup>
                 <div style={{ color: '#0f172a', padding: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '1.1rem' }}>🏭</span>
-                    <strong style={{ fontSize: '1rem', color: '#92400e' }}>{buyer.company_name}</strong>
+                    <strong style={{ fontSize: '1rem', color: '#684b35' }}>{buyer.company_name}</strong>
                   </div>
                   {buyer.distance_km !== undefined && (
-                    <div style={{ fontSize: '0.85rem', color: '#b45309', fontWeight: '600' }}>
-                      🚀 Distance: {buyer.distance_km} km
+                    <div style={{ fontSize: '0.85rem', color: '#a96f13', fontWeight: '600' }}>
+                      {t('distance')} {buyer.distance_km} km
                     </div>
                   )}
                   <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '4px' }}>
-                    📞 {buyer.contact_information || 'No contact provided'}
+                    {buyer.contact_information || t('noContact')}
                   </div>
                   {buyer.demands && buyer.demands.length > 0 && (
-                    <div style={{ marginTop: '6px', fontSize: '0.8rem', background: '#fffbeb', padding: '4px 6px', borderRadius: '6px', color: '#b45309' }}>
-                      Active Demand: {buyer.demands[0].required_quantity} MT of {buyer.demands[0].biomass_type}
+                    <div style={{ marginTop: '6px', fontSize: '0.8rem', background: '#f8e8bd', padding: '4px 6px', borderRadius: '6px', color: '#76500d' }}>
+                      {t('activeDemand')} {buyer.demands[0].required_quantity} MT {buyer.demands[0].biomass_type}
                     </div>
                   )}
                 </div>
@@ -202,23 +202,22 @@ export default function BiomassMap({
         bottom: '12px',
         right: '12px',
         zIndex: 500,
-        background: 'rgba(15, 23, 42, 0.88)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(255, 253, 248, 0.94)',
         padding: '8px 12px',
         borderRadius: '10px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid #d8ceb9',
         display: 'flex',
         gap: '12px',
         fontSize: '0.75rem',
-        color: '#f1f5f9'
+        color: '#20251f'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
-          <span>Farms / Supply</span>
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#326447', display: 'inline-block' }}></span>
+          <span>{t('mapFarms')}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
-          <span>Buyers / Industry</span>
+          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#a96f13', display: 'inline-block' }}></span>
+          <span>{t('mapBuyers')}</span>
         </div>
       </div>
     </div>

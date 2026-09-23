@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { api } from '../services/api';
 import BiomassMap from './BiomassMap';
 import {
@@ -17,10 +18,24 @@ import {
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function BuyerDashboard() {
+  const { t } = useTranslation();
+  const outletContext = useOutletContext();
+  const activeSection = outletContext?.activeSection;
+
+  useEffect(() => {
+    if (activeSection) {
+      const el = document.getElementById(`section-${activeSection}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [activeSection]);
+
   const [profile, setProfile] = useState(null);
   const [demands, setDemands] = useState([]);
   const [crops, setCrops] = useState([]);
@@ -174,13 +189,13 @@ export default function BuyerDashboard() {
   };
 
   return (
-    <div>
+    <div id="section-overview" style={{ paddingBottom: '2rem' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span>Buyer & Industrial Procurement</span>
-            <span className="badge badge-amber">Demand Matching</span>
+            <span>{t('buyerDashboard')}</span>
+            <span className="badge badge-amber">{t('demandMatching')}</span>
           </h1>
           <p>
             {profile ? `Managing facility: ${profile.company_name} | Coords: [${profile.latitude}, ${profile.longitude}]` : 'Setup your industrial procurement profile and post biomass tenders.'}
@@ -190,11 +205,11 @@ export default function BuyerDashboard() {
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn btn-secondary" onClick={() => setShowProfileModal(true)}>
             <Building size={16} />
-            <span>{profile ? 'Edit Profile' : 'Setup Profile'}</span>
+            <span>{profile ? t('editProfile') : t('setupProfile')}</span>
           </button>
           <button className="btn btn-warning" onClick={() => setShowDemandModal(true)}>
             <Plus size={18} />
-            <span>Post Biomass Demand</span>
+            <span>{t('postDemand')}</span>
           </button>
         </div>
       </div>
@@ -207,7 +222,7 @@ export default function BuyerDashboard() {
           </div>
           <div>
             <div className="stat-value">{demands.length}</div>
-            <div className="stat-label">Active Demands</div>
+            <div className="stat-label">{t('activeDemands')}</div>
           </div>
         </div>
 
@@ -217,7 +232,7 @@ export default function BuyerDashboard() {
           </div>
           <div>
             <div className="stat-value">{totalDemandedQty.toLocaleString()} MT</div>
-            <div className="stat-label">Total Volume Required</div>
+            <div className="stat-label">{t('totalVolume')}</div>
           </div>
         </div>
 
@@ -227,7 +242,7 @@ export default function BuyerDashboard() {
           </div>
           <div>
             <div className="stat-value">{nearbyFarms.length}</div>
-            <div className="stat-label">Farms in {radiusKm}km Radius</div>
+            <div className="stat-label">{t('farmsInRadius', { radius: radiusKm })}</div>
           </div>
         </div>
 
@@ -237,36 +252,36 @@ export default function BuyerDashboard() {
           </div>
           <div>
             <div className="stat-value">₹{(totalBudget / 100000).toFixed(1)}L</div>
-            <div className="stat-label">Procurement Budget</div>
+            <div className="stat-label">{t('budget')}</div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.75rem' }}>
+      {/* ── Stacked Dashboard Layout ────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
         
         {/* Left Column: Active Demands & Supplier Recommendations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Active Demands Table */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-demands" className="glass-panel" style={{ padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Layers size={20} color="var(--amber-400)" />
-                <span>Your Procurement Requirements</span>
+                <span>{t('requirements')}</span>
               </h3>
               <button className="btn btn-secondary btn-sm" onClick={fetchData}>
-                <RefreshCw size={14} /> Refresh
+                <RefreshCw size={14} /> {t('refresh')}
               </button>
             </div>
 
             {demands.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)' }}>
                 <Factory size={32} color="var(--amber-400)" style={{ margin: '0 auto 0.5rem' }} />
-                <div style={{ fontWeight: 600, color: '#fff' }}>No biomass demands posted yet</div>
-                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>Post your required biomass quantity, crop residue type, and offered price.</p>
+                <div style={{ fontWeight: 600, color: 'var(--ink-900)' }}>{t('noDemands')}</div>
+                <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{t('buyerDescText')}</p>
                 <button className="btn btn-warning btn-sm" onClick={() => setShowDemandModal(true)}>
-                  <Plus size={16} /> Create First Demand
+                  <Plus size={16} /> {t('createDemand')}
                 </button>
               </div>
             ) : (
@@ -274,10 +289,7 @@ export default function BuyerDashboard() {
                 <table className="custom-table">
                   <thead>
                     <tr>
-                      <th>Biomass Type</th>
-                      <th>Quantity (MT)</th>
-                      <th>Offered Price</th>
-                      <th>Timeline</th>
+                      <th>{t('biomass')}</th><th>{t('quantity')}</th><th>{t('price')}</th><th>{t('timeline')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -287,7 +299,7 @@ export default function BuyerDashboard() {
                           <span className="badge badge-emerald">🌾 {d.biomass_type}</span>
                         </td>
                         <td>
-                          <strong style={{ color: '#fff' }}>{d.required_quantity} MT</strong>
+                          <strong style={{ color: 'var(--ink-900)' }}>{d.required_quantity} MT</strong>
                         </td>
                         <td>
                           <strong style={{ color: 'var(--amber-400)' }}>₹{d.offered_price}</strong> /MT
@@ -304,10 +316,10 @@ export default function BuyerDashboard() {
           </div>
 
           {/* Ranked Nearby Supplier Farms */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-matches" className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <Truck size={20} color="var(--emerald-400)" />
-              <span>Available Farm Suppliers in {radiusKm}km Transit Zone</span>
+              <span>{t('farmSuppliers', { radius: radiusKm })}</span>
             </h3>
 
             {nearbyFarms.length > 0 ? (
@@ -327,7 +339,7 @@ export default function BuyerDashboard() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span className="badge badge-blue">Supplier #{idx + 1}</span>
-                        <strong style={{ color: '#fff' }}>{farm.farm_name}</strong>
+                        <strong style={{ color: 'var(--ink-900)' }}>{farm.farm_name}</strong>
                       </div>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                         📍 {farm.district}, {farm.state} • Area: {farm.area} ha
@@ -342,14 +354,14 @@ export default function BuyerDashboard() {
                       <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--amber-400)' }}>
                         {farm.distance_km} km
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Transit Distance</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('transitDistance')}</div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                No registered farms found within {radiusKm}km. Try increasing the search radius on the map.
+                {t('noSuppliers', { radius: radiusKm })}
               </div>
             )}
           </div>
@@ -360,16 +372,16 @@ export default function BuyerDashboard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
           {/* Spatial GIS Logistics Map */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-gis" className="glass-panel" style={{ padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <MapPin size={20} color="var(--amber-400)" />
-                <span>Geospatial Sourcing Network</span>
+                <span>{t('geospatialNetwork')}</span>
               </h3>
 
               {/* Radius Filter */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Radius:</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('radius')}</span>
                 <select
                   value={radiusKm}
                   onChange={(e) => handleRadiusChange(parseFloat(e.target.value))}
@@ -377,7 +389,7 @@ export default function BuyerDashboard() {
                     padding: '0.35rem 0.75rem',
                     background: 'var(--bg-card-solid)',
                     border: '1px solid var(--border-subtle)',
-                    color: '#fff',
+                    color: 'var(--ink-900)',
                     borderRadius: '6px',
                     fontSize: '0.8rem'
                   }}
@@ -397,7 +409,7 @@ export default function BuyerDashboard() {
                 buyers={profile ? [profile] : []}
                 farms={nearbyFarms}
                 radiusKm={radiusKm}
-                height="380px"
+                height="500px"
               />
             </div>
 
@@ -408,10 +420,10 @@ export default function BuyerDashboard() {
           </div>
 
           {/* Demand Distribution Chart */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+          <div id="section-analytics" className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
               <TrendingUp size={20} color="var(--emerald-400)" />
-              <span>Demand Allocation by Biomass Type</span>
+              <span>{t('demandAllocation')}</span>
             </h3>
             <div style={{ height: '220px', display: 'flex', justifyContent: 'center' }}>
               <Doughnut
@@ -439,7 +451,7 @@ export default function BuyerDashboard() {
         <div className="modal-overlay" onClick={() => setShowProfileModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '2rem' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-              {profile ? 'Update Facility Profile' : 'Setup Buyer Facility Profile'}
+              {profile ? t('editProfile') : t('setupProfile')}
             </h2>
             <p style={{ fontSize: '0.85rem', marginBottom: '1.5rem' }}>
               Configure your industrial biomass processing plant, factory GPS coordinates, and procurement contacts.
@@ -447,7 +459,7 @@ export default function BuyerDashboard() {
 
             <form onSubmit={handleSaveProfile}>
               <div className="form-group">
-                <label className="form-label">Plant / Company Name</label>
+                <label className="form-label">{t('companyName')}</label>
                 <input
                   type="text"
                   className="form-control"
@@ -460,7 +472,7 @@ export default function BuyerDashboard() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Plant Latitude</label>
+                  <label className="form-label">{t('plantLatitude')}</label>
                   <input
                     type="number"
                     step="0.0001"
@@ -471,7 +483,7 @@ export default function BuyerDashboard() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Plant Longitude</label>
+                  <label className="form-label">{t('plantLongitude')}</label>
                   <input
                     type="number"
                     step="0.0001"
@@ -484,7 +496,7 @@ export default function BuyerDashboard() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Procurement Contact (Email / Phone)</label>
+                <label className="form-label">{t('contact')}</label>
                 <input
                   type="text"
                   className="form-control"
@@ -501,10 +513,10 @@ export default function BuyerDashboard() {
                   className="btn btn-secondary"
                   onClick={() => setShowProfileModal(false)}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Save Facility Profile
+                  {t('save')}
                 </button>
               </div>
             </form>
@@ -516,14 +528,14 @@ export default function BuyerDashboard() {
       {showDemandModal && (
         <div className="modal-overlay" onClick={() => setShowDemandModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Post Biomass Procurement Tender</h2>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{t('postDemand')}</h2>
             <p style={{ fontSize: '0.85rem', marginBottom: '1.5rem' }}>
               Publish your biomass demand to the matching engine to connect with nearby agricultural farms.
             </p>
 
             <form onSubmit={handleCreateDemand}>
               <div className="form-group">
-                <label className="form-label">Biomass / Crop Residue Type</label>
+                <label className="form-label">{t('biomassType')}</label>
                 <select
                   className="form-control"
                   value={newDemand.biomass_type}
@@ -539,7 +551,7 @@ export default function BuyerDashboard() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Required Quantity (Metric Tons)</label>
+                  <label className="form-label">{t('quantity')}</label>
                   <input
                     type="number"
                     step="10"
@@ -550,7 +562,7 @@ export default function BuyerDashboard() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Offered Price (INR / MT)</label>
+                  <label className="form-label">{t('offeredPrice')}</label>
                   <input
                     type="number"
                     step="50"
@@ -564,7 +576,7 @@ export default function BuyerDashboard() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Procurement Start Date</label>
+                  <label className="form-label">{t('startDate')}</label>
                   <input
                     type="date"
                     className="form-control"
@@ -574,7 +586,7 @@ export default function BuyerDashboard() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Procurement End Date</label>
+                  <label className="form-label">{t('endDate')}</label>
                   <input
                     type="date"
                     className="form-control"
@@ -591,14 +603,14 @@ export default function BuyerDashboard() {
                   className="btn btn-secondary"
                   onClick={() => setShowDemandModal(false)}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-warning"
                   disabled={submittingDemand}
                 >
-                  {submittingDemand ? 'Publishing Tender...' : 'Publish Procurement Tender'}
+                  {submittingDemand ? t('publishing') : t('publish')}
                 </button>
               </div>
             </form>

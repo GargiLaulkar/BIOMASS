@@ -125,6 +125,23 @@ class ApiService {
     });
   }
 
+  async deleteFarm(id) {
+    // DELETE returns 204 No Content — fetch still resolves, no JSON body expected.
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/api/farms/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const msg = typeof data.detail === 'string' ? data.detail : 'Failed to delete farm';
+      throw new Error(msg);
+    }
+  }
+
   // --- Predictions Endpoints ---
   async predictBiomass(predictionData) {
     return this.request('/api/predictions/biomass', {
