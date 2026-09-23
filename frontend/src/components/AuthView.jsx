@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { useTranslation } from 'react-i18next';
 import {
   Leaf,
   Factory,
@@ -24,6 +25,7 @@ import {
 
 export default function AuthView() {
   const { login, register, loading, authError, setAuthError } = useAuth();
+  const { t } = useTranslation();
   
   // View mode: 'signin' | 'register' | 'forgot' | 'reset'
   const [viewMode, setViewMode] = useState('signin');
@@ -261,99 +263,41 @@ export default function AuthView() {
 
   return (
     <div style={{
-      maxWidth: '1120px',
-      margin: '2rem auto',
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-      gap: '2.5rem',
+      maxWidth: '480px',
+      margin: '4rem auto',
       alignItems: 'center'
     }}>
-      {/* Left Column: Hero Showcase */}
-      <div>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.35rem 0.85rem',
-          borderRadius: 'var(--radius-full)',
-          background: 'rgba(16, 185, 129, 0.12)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          color: 'var(--emerald-400)',
-          fontSize: '0.85rem',
-          fontWeight: 600,
-          marginBottom: '1.25rem'
-        }}>
-          <Sparkles size={16} />
-          <span>Next-Gen Agricultural Biomass Platform</span>
+      {/* Quick Demo Logins - Moved above the auth card for easy access */}
+      <div className="glass-panel auth-demo-panel" style={{ padding: '1.25rem', border: '1px dashed rgba(16, 185, 129, 0.4)', marginBottom: '2rem' }}>
+        <div className="auth-demo-heading" style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+          ⚡ Instant 1-Click Demo Portals:
         </div>
-
-        <h1 style={{ fontSize: '2.75rem', lineHeight: 1.15, marginBottom: '1.25rem' }}>
-          Monetize Crop Residue with <span style={{ background: 'linear-gradient(135deg, #34d399, #10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI & Spatial Matching</span>
-        </h1>
-
-        <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-          Connect farms generating agricultural residue with biomass buyers, ethanol biorefineries, and boiler plants using ML crop yield prediction, automated GIS distance logistics, and dynamic fair pricing.
-        </p>
-
-        {/* Feature Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          <div className="glass-panel" style={{ padding: '1rem' }}>
-            <div style={{ color: 'var(--emerald-400)', marginBottom: '0.5rem' }}>
-              <TrendingUp size={22} />
-            </div>
-            <strong style={{ display: 'block', color: '#fff', fontSize: '0.95rem' }}>AI Biomass Forecast</strong>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Predict crop yield & residual biomass in metric tons.</span>
-          </div>
-
-          <div className="glass-panel" style={{ padding: '1rem' }}>
-            <div style={{ color: 'var(--amber-400)', marginBottom: '0.5rem' }}>
-              <MapPin size={22} />
-            </div>
-            <strong style={{ display: 'block', color: '#fff', fontSize: '0.95rem' }}>GIS Haversine Engine</strong>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Calculate exact transit radius & logistics transport costs.</span>
-          </div>
-
-          <div className="glass-panel" style={{ padding: '1rem' }}>
-            <div style={{ color: 'var(--blue-400)', marginBottom: '0.5rem' }}>
-              <Zap size={22} />
-            </div>
-            <strong style={{ display: 'block', color: '#fff', fontSize: '0.95rem' }}>Dynamic Match Score</strong>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Algorithmic scoring factoring distance, price, and net profit.</span>
-          </div>
-        </div>
-
-        {/* Quick Demo Logins */}
-        <div className="glass-panel" style={{ padding: '1.25rem', border: '1px dashed rgba(16, 185, 129, 0.4)' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc', marginBottom: '0.75rem' }}>
-            ⚡ Instant 1-Click Demo Portals:
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => handleQuickDemo('farmer')}
-              disabled={loading}
-            >
-              <Leaf size={16} /> Demo Farmer (Ludhiana Farms)
-            </button>
-            <button
-              type="button"
-              className="btn btn-warning btn-sm"
-              onClick={() => handleQuickDemo('buyer')}
-              disabled={loading}
-            >
-              <Factory size={16} /> Demo Buyer (Satluj Starch)
-            </button>
-          </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => handleQuickDemo('farmer')}
+            disabled={loading}
+          >
+            <Leaf size={16} /> Demo Farmer (Ludhiana Farms)
+          </button>
+          <button
+            type="button"
+            className="btn btn-warning btn-sm"
+            onClick={() => handleQuickDemo('buyer')}
+            disabled={loading}
+          >
+            <Factory size={16} /> Demo Buyer (Satluj Starch)
+          </button>
         </div>
       </div>
 
-      {/* Right Column: Auth Card */}
+      {/* Auth Card */}
       <div className="glass-panel" style={{ padding: '2.25rem', border: '1px solid rgba(255, 255, 255, 0.12)', position: 'relative' }}>
         
         {/* Toggle Mode (only in signin or register mode) */}
         {(viewMode === 'signin' || viewMode === 'register') && (
-          <div style={{
+          <div className="auth-mode-toggle" style={{
             display: 'flex',
             background: 'rgba(0, 0, 0, 0.3)',
             padding: '4px',
@@ -361,6 +305,7 @@ export default function AuthView() {
             marginBottom: '1.5rem'
           }}>
             <button
+              className="auth-mode-tab"
               type="button"
               onClick={() => { setViewMode('signin'); setAuthError(null); }}
               style={{
@@ -368,7 +313,7 @@ export default function AuthView() {
                 padding: '0.65rem',
                 border: 'none',
                 background: viewMode === 'signin' ? 'var(--bg-card-solid)' : 'transparent',
-                color: viewMode === 'signin' ? '#fff' : 'var(--text-secondary)',
+                color: viewMode === 'signin' ? 'var(--ink-900)' : 'var(--text-secondary)',
                 fontWeight: 600,
                 fontSize: '0.9rem',
                 borderRadius: '6px',
@@ -376,9 +321,10 @@ export default function AuthView() {
                 transition: 'all 0.2s ease'
               }}
             >
-              Sign In
+              {t('signIn')}
             </button>
             <button
+              className="auth-mode-tab"
               type="button"
               onClick={() => { setViewMode('register'); setAuthError(null); }}
               style={{
@@ -386,7 +332,7 @@ export default function AuthView() {
                 padding: '0.65rem',
                 border: 'none',
                 background: viewMode === 'register' ? 'var(--bg-card-solid)' : 'transparent',
-                color: viewMode === 'register' ? '#fff' : 'var(--text-secondary)',
+                color: viewMode === 'register' ? 'var(--ink-900)' : 'var(--text-secondary)',
                 fontWeight: 600,
                 fontSize: '0.9rem',
                 borderRadius: '6px',
@@ -394,7 +340,7 @@ export default function AuthView() {
                 transition: 'all 0.2s ease'
               }}
             >
-              Create Account
+              {t('createAccount')}
             </button>
           </div>
         )}
@@ -403,7 +349,7 @@ export default function AuthView() {
         {viewMode === 'signin' && (
           <>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Lock size={20} color="var(--emerald-400)" /> Welcome Back
+              <Lock size={20} color="var(--emerald-400)" /> {t('welcomeBack')}
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
               Enter your verified email and password to access your dashboard.
@@ -443,7 +389,7 @@ export default function AuthView() {
               <ArrowLeft size={16} /> Back to Sign In
             </button>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <KeyRound size={20} color="var(--amber-400)" /> Forgot Password
+              <KeyRound size={20} color="var(--amber-400)" /> {t('forgotPassword')}
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
               Enter your registered account email to receive a password reset verification token.
@@ -472,7 +418,7 @@ export default function AuthView() {
               <ArrowLeft size={16} /> Back to Request Token
             </button>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <RotateCcw size={20} color="var(--emerald-400)" /> Set New Password
+              <RotateCcw size={20} color="var(--emerald-400)" /> {t('setNewPassword')}
             </h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
               Enter the verification token and choose your new secure password.
@@ -527,7 +473,7 @@ export default function AuthView() {
               <>
                 {/* Role Selector */}
                 <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label" style={{ fontWeight: 600 }}>Select Role</label>
+                  <label className="form-label" style={{ fontWeight: 600 }}>{t('selectRole')}</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div
                       onClick={() => setRole('farmer')}
@@ -542,10 +488,10 @@ export default function AuthView() {
                       }}
                     >
                       <Leaf size={22} color={role === 'farmer' ? 'var(--emerald-400)' : 'var(--text-secondary)'} style={{ margin: '0 auto 4px' }} />
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: role === 'farmer' ? '#fff' : 'var(--text-secondary)' }}>
-                        Farmer
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: role === 'farmer' ? 'var(--ink-900)' : 'var(--text-secondary)' }}>
+                        {t('farmer')}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Residue Supplier</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('residueSupplier')}</div>
                     </div>
 
                     <div
@@ -561,10 +507,10 @@ export default function AuthView() {
                       }}
                     >
                       <Factory size={22} color={role === 'buyer' ? 'var(--amber-400)' : 'var(--text-secondary)'} style={{ margin: '0 auto 4px' }} />
-                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: role === 'buyer' ? '#fff' : 'var(--text-secondary)' }}>
-                        Buyer / Plant
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: role === 'buyer' ? 'var(--ink-900)' : 'var(--text-secondary)' }}>
+                        {t('buyer')}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Biomass Purchaser</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('biomassPurchaser')}</div>
                     </div>
                   </div>
                 </div>
@@ -572,7 +518,7 @@ export default function AuthView() {
                 {/* Name */}
                 <div className="form-group" style={{ marginBottom: '1rem' }}>
                   <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Full Name or Business Name</span>
+                    <span>{t('fullName')}</span>
                     {touched.name && !errors.name && (
                       <span style={{ color: 'var(--emerald-400)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <CheckCircle2 size={12} /> Valid
@@ -606,7 +552,7 @@ export default function AuthView() {
             {/* Email */}
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>Email Address</span>
+                <span>{t('email')}</span>
                 {touched.email && !errors.email && (
                   <span style={{ color: 'var(--emerald-400)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
                     <CheckCircle2 size={12} /> Valid
@@ -638,7 +584,7 @@ export default function AuthView() {
             {/* Password */}
             <div className="form-group" style={{ marginBottom: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <label className="form-label" style={{ margin: 0 }}>Password</label>
+                <label className="form-label" style={{ margin: 0 }}>{t('password')}</label>
                 {viewMode === 'signin' && (
                   <button
                     type="button"
@@ -723,7 +669,7 @@ export default function AuthView() {
             {viewMode === 'register' && (
               <div className="form-group" style={{ marginBottom: '1.25rem' }}>
                 <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Confirm Password</span>
+                  <span>{t('confirmPassword')}</span>
                   {touched.confirmPassword && !errors.confirmPassword && (
                     <span style={{ color: 'var(--emerald-400)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
                       <CheckCircle2 size={12} /> Matched
@@ -778,7 +724,7 @@ export default function AuthView() {
               disabled={loading}
             >
               {loading ? (
-                <span>Authenticating...</span>
+                <span>{t('authenticating')}</span>
               ) : (
                 <>
                   <span>{viewMode === 'register' ? 'Complete Registration' : 'Sign In to Dashboard'}</span>
@@ -795,7 +741,7 @@ export default function AuthView() {
         {viewMode === 'forgot' && (
           <form onSubmit={handleForgotPasswordRequest} noValidate>
             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-              <label className="form-label">Registered Account Email</label>
+              <label className="form-label">{t('registeredAccountEmail')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="email"
@@ -825,10 +771,10 @@ export default function AuthView() {
               disabled={forgotLoading}
             >
               {forgotLoading ? (
-                <span>Generating Token...</span>
+                <span>{t('generatingToken')}</span>
               ) : (
                 <>
-                  <span>Generate Reset Token</span>
+                  <span>{t('generateResetToken')}</span>
                   <ArrowRight size={16} />
                 </>
               )}
@@ -859,7 +805,7 @@ export default function AuthView() {
         {viewMode === 'reset' && (
           <form onSubmit={handleResetPasswordSubmit} noValidate>
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Account Email</label>
+              <label className="form-label">{t('accountEmail')}</label>
               <input
                 type="email"
                 className="form-control"
@@ -871,7 +817,7 @@ export default function AuthView() {
             </div>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Verification Reset Token</label>
+              <label className="form-label">{t('verificationResetToken')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
@@ -897,7 +843,7 @@ export default function AuthView() {
             </div>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label">New Password</label>
+              <label className="form-label">{t('newPassword')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showNewPassword ? 'text' : 'password'}
@@ -939,7 +885,7 @@ export default function AuthView() {
             </div>
 
             <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-              <label className="form-label">Confirm New Password</label>
+              <label className="form-label">{t('confirmNewPassword')}</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showNewPassword ? 'text' : 'password'}
@@ -969,10 +915,10 @@ export default function AuthView() {
               disabled={forgotLoading || forgotSuccess}
             >
               {forgotLoading ? (
-                <span>Resetting Password...</span>
+                <span>{t('resettingPassword')}</span>
               ) : (
                 <>
-                  <span>Save New Password</span>
+                  <span>{t('saveNewPassword')}</span>
                   <CheckCircle2 size={16} />
                 </>
               )}

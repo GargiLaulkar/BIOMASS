@@ -1,153 +1,91 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Leaf, Factory, User, LogOut, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { Tractor, Menu, X, Bell, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-export default function Navbar({ activeTab, setActiveTab }) {
-  const { user, role, logout, login } = useAuth();
+export default function Navbar({ sidebarOpen, setSidebarOpen }) {
+  const { user, role } = useAuth();
+  const { t, i18n } = useTranslation();
 
-  const handleDemoSwitch = async (targetRole) => {
-    if (targetRole === 'farmer') {
-      try {
-        await login('farmer@bioplan.com', 'password123');
-      } catch {
-        // Fallback demo farmer
-        await login('testfarmer@bioplan.com', 'password123');
-      }
-    } else {
-      try {
-        await login('buyer@bioplan.com', 'password123');
-      } catch {
-        // Fallback demo buyer
-        await login('buyer_user@bioplan.com', 'password123');
-      }
-    }
-  };
+  const roleLabel  = role === 'farmer' ? 'Farmer Dashboard' : 'Buyer Dashboard';
+  const roleColor  = role === 'farmer' ? 'var(--forest-600)' : 'var(--wheat-700)';
+  const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <header style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
-      background: 'rgba(10, 15, 24, 0.85)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--border-subtle)',
-      padding: '0.85rem 1.5rem'
-    }}>
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={() => setActiveTab('dashboard')}>
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 16px rgba(16, 185, 129, 0.4)',
-            color: '#fff'
-          }}>
-            <Leaf size={24} />
+    <header className="site-navbar">
+      {/* ── Left: hamburger + breadcrumb ─────────────────── */}
+      <div className="navbar-left">
+        {/* Hamburger — always visible on mobile, also on desktop for sidebar */}
+        <button
+          className="navbar-hamburger"
+          onClick={() => setSidebarOpen(o => !o)}
+          aria-label="Toggle sidebar"
+        >
+          {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+
+        {/* Wordmark — shown only when sidebar is closed / on mobile */}
+        <div className="navbar-brand">
+          <div className="navbar-logo-mark">
+            <Tractor size={20} color="#fff" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span className="font-display" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>
-                BioPlan<span style={{ color: 'var(--emerald-400)' }}>.AI</span>
-              </span>
-              <span className="badge badge-emerald" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>
-                v1.0 Live
-              </span>
+            <div className="navbar-brand-name">
+              BioPlan<span style={{ color: 'var(--forest-600)' }}>.AI</span>
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Intelligent Biomass Supply & Procurement
-            </div>
+            <div className="navbar-brand-sub">{t('tagline')}</div>
           </div>
         </div>
 
-        {/* User Info & Actions */}
-        {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* Role Badge */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.4rem 0.85rem',
-              borderRadius: 'var(--radius-full)',
-              background: role === 'farmer' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-              border: `1px solid ${role === 'farmer' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-              color: role === 'farmer' ? 'var(--emerald-400)' : 'var(--amber-400)',
-              fontSize: '0.85rem',
-              fontWeight: 600
-            }}>
-              {role === 'farmer' ? <Leaf size={16} /> : <Factory size={16} />}
-              <span>{role === 'farmer' ? 'Farmer Portal' : 'Buyer Portal'}</span>
+        {/* Page breadcrumb — only when logged in */}
+        {user && (
+          <div className="navbar-breadcrumb">
+            <span className="navbar-breadcrumb-sep">›</span>
+            <span className="navbar-breadcrumb-page" style={{ color: roleColor }}>{roleLabel}</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Right: date + language + alerts ─────────────── */}
+      <div className="navbar-right">
+        {/* Date chip */}
+        <div className="navbar-date">{today}</div>
+
+        {/* Language switcher */}
+        <div className="navbar-lang">
+          <Globe size={15} style={{ color: 'var(--text-muted)' }} />
+          <select
+            aria-label={t('language')}
+            className="language-switcher navbar-lang-select"
+            value={i18n.language}
+            onChange={e => i18n.changeLanguage(e.target.value)}
+          >
+            <option value="en">{t('english')}</option>
+            <option value="hi">{t('hindi')}</option>
+            <option value="mr">{t('marathi')}</option>
+          </select>
+        </div>
+
+        {/* Notification bell */}
+        <button className="navbar-icon-btn" title="Notifications">
+          <Bell size={18} />
+          <span className="navbar-notif-dot" />
+        </button>
+
+        {/* User avatar chip */}
+        {user && (
+          <div className="navbar-user-chip">
+            <div className="navbar-user-avatar">
+              {user.email?.[0]?.toUpperCase() ?? 'U'}
             </div>
-
-            {/* Quick Demo Switcher */}
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => handleDemoSwitch(role === 'farmer' ? 'buyer' : 'farmer')}
-              title={`Switch to ${role === 'farmer' ? 'Buyer' : 'Farmer'} account`}
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
-            >
-              <ArrowRightLeft size={14} />
-              <span>Switch to {role === 'farmer' ? 'Buyer' : 'Farmer'}</span>
-            </button>
-
-            {/* User display */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff'
-              }}>
-                <User size={16} />
-              </div>
-              <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.email}
+            <div className="navbar-user-info">
+              <span className="navbar-user-name">
+                {user.email?.split('@')[0]}
+              </span>
+              <span className="navbar-user-role" style={{ color: roleColor }}>
+                {role === 'farmer' ? 'Farmer' : 'Buyer'}
               </span>
             </div>
-
-            {/* Logout */}
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={logout}
-              style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-            >
-              <LogOut size={15} />
-              <span>Exit</span>
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Demo Accounts:</span>
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => handleDemoSwitch('farmer')}
-            >
-              <Leaf size={14} /> Demo Farmer
-            </button>
-            <button
-              className="btn btn-warning btn-sm"
-              onClick={() => handleDemoSwitch('buyer')}
-            >
-              <Factory size={14} /> Demo Buyer
-            </button>
           </div>
         )}
       </div>
