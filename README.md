@@ -1,10 +1,12 @@
 # BioPlan AI
 
-BioPlan AI is a full-stack prototype for planning agricultural-residue supply. It helps farmers register crop holdings, estimate recoverable biomass after harvest, find nearby industrial buyers, and compare offers after transport costs. Buyers can create a facility profile, post procurement requirements, and discover nearby farms on a map.
+## About
 
-The application combines a React dashboard, a FastAPI API, SQLite persistence, geospatial proximity calculations, and an ML yield-estimation pipeline trained on Indian agricultural and rainfall data.
+BioPlan AI is a full-stack platform designed to connect farmers generating agricultural residue with industrial buyers. By providing AI-driven crop yield and biomass estimates alongside a geospatial matching engine, it helps farmers monetize their stubble (rather than burning it) and allows buyers to secure their biomass supply chains efficiently based on transport cost and price.
 
-> This repository is a prototype and decision-support tool, not a production procurement, pricing, or agronomic advisory system. See [Known limitations](#known-limitations) before relying on its estimates.
+The application combines a React dashboard, a FastAPI backend, Leaflet GIS proximity routing, and an XGBoost ML inference pipeline trained on real Indian agricultural and meteorological data.
+
+> **Note:** This repository is a prototype and decision-support tool, not a production procurement, pricing, or agronomic advisory system. See [Known limitations](#known-limitations) before relying on its estimates.
 
 ## What it does
 
